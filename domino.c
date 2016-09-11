@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <stdbool.h>
 
@@ -15,45 +16,25 @@ piece * init_lot(piece * p);
 piece * init_player(piece * p,piece ** l);
 piece * inserir_fim(piece * p,int i,int j);
 void trocar(piece ** p,piece ** l,int i,int j,bool ini);
+void trocar_aleatoriamente(piece ** p,piece ** l);
 piece * inserir_ini(piece * p,int i,int j);
 piece * deletar(piece * p,int i,int j);
-piece * limpar(piece * p);
+void limpar(piece * p);
 void mostrar(piece * p);
 int contar(piece * p);
-piece * buscar(piece * p,int i,int j);
-void jogo(piece **l,piece **p,piece **b,piece **t);
+piece * buscar_ultimo(piece * p);
+bool pode_jogar(piece * p,piece * t,bool ini);
+void abrir_menu();
+void jogar();
+void boot_ia(piece **boot, piece **table, piece **lot,bool *comprar,bool *player_turn);
+void testar_vencedor(piece *player,piece *boot,bool *jogando);
 
 int main()
 {
-	piece *lot=NULL,*player=NULL,*boot=NULL,*table=NULL;
-	bool menu=true;
+	
+	abrir_menu();
 
-	while(menu)
-	{
-		system("clear");
-		char escolha;
-		printf("\n  //------------------------//");
-		printf("\n  //         Dominó         //");
-		printf("\n  //------------------------//");
-		printf("\n  1 - Iniciar jogo 2 - Sair");
-		printf("\n  Sua escolha: ");
-		scanf("%c",&escolha);
-		switch(escolha)
-		{
-			case '1':
-				jogo(&lot,&player,&boot,&table);
-			break;
-			case '2':
-				menu = false;
-				system("clear");
-			break;
-		}
-	}
-
-	lot = init_lot(lot);
-	player = init_player(player,&lot);
-	boot = init_player(boot,&lot);
-
+	system("clear");
 	return 0;
 }
 
@@ -70,19 +51,9 @@ piece * init_lot(piece * p)
 
 piece * init_player(piece * p,piece ** l)
 {
-	int i,j;
+	int i;
 	for(i=0;i<6;i++)
-	{
-		srand((unsigned)time(NULL));
-		int n = rand() % (contar(*l)-1);
-		piece * m = *l;
-		for(j=0;j<=n;j++)
-		{
-			if(j == n)
-				trocar(&p,l,m->right,m->left,false);
-			m = m->prox;
-		}
-	}
+		trocar_aleatoriamente(&p,l);
 	return p;
 }
 
@@ -90,9 +61,7 @@ piece * inserir_fim(piece * p,int i,int j)
 {
 	if(p == NULL)
 		return inserir_ini(p,i,j);
-	piece * last = p;
-	while(last->prox != NULL)
-		last = last->prox;
+	piece * last = buscar_ultimo(p);
 	piece * new = (piece *) malloc(sizeof(piece));
 	new->right = i;
 	new->left = j;
@@ -121,6 +90,24 @@ void trocar(piece ** p,piece ** l,int i,int j,bool ini)
 	*l = deletar(*l,i,j);
 }
 
+void trocar_aleatoriamente(piece ** p,piece ** l)
+{
+	srand((unsigned)time(NULL));
+	int j,n;
+	if(contar(*l) > 1)
+		n = rand() % (contar(*l)-1);
+	else
+		n = 0;
+	piece * m = *l;
+	for(j=0;j<=n;j++)
+	{
+		if(j == n)
+			trocar(p,l,m->right,m->left,false);
+		if(m->prox != NULL)
+			m = m->prox;
+	}
+}
+
 piece * deletar(piece * p,int i,int j)
 {
 	piece * l = p;
@@ -132,7 +119,8 @@ piece * deletar(piece * p,int i,int j)
 	if (l == p)
 	{
 		p = l->prox;
-		p->ante = NULL;
+		if(p != NULL)
+			p->ante = NULL;
 		free(l);
 		return p;
 	}
@@ -147,12 +135,17 @@ piece * deletar(piece * p,int i,int j)
 	return p;
 }
 
-piece * limpar(piece * p)
+void limpar(piece * p)
 {
-	piece * n;
-	for(n=p;n!=NULL;n=n->prox)
-		p = deletar(p,n->right,n->left);
-	return p;
+	if(p != NULL)
+	{
+		piece *n,*m;
+		for(n=p;n->prox!=NULL;n=m)
+		{
+			m = n->prox;
+			p = deletar(p,n->right,n->left);
+		}
+	}
 }
 
 void mostrar(piece * p)
@@ -176,29 +169,184 @@ int contar(piece * p)
 	return i;
 }
 
-piece * buscar(piece * p,int i,int j)
+piece * buscar_ultimo(piece * p)
 {
-	piece * n = p;
-	while((n != NULL) && ((n->right != i) || (n->left != j)))
-		n = n->prox;
-	if(n == NULL)
-		return NULL;
-	else
-		return n;
+	piece * last = p;
+	while(last->prox != NULL)
+		last = last->prox;
+	return last;
 }
 
-void jogo(piece **l,piece **p,piece **b,piece **t)
+bool pode_jogar(piece * p,piece * t,bool ini)
 {
-	piece *lot=*l,*player=*p,*boot=*b,*table=*t;
-	bool jogando = true;
-	// Inicializando //
-	lot = init_lot(lot);
-	player = init_player(player,l);
-	boot = init_player(boot,l);
-	// Tela de jogo //
-	while(jogando)
+	bool retorno = false;
+	if(t == NULL)
+		return true;
+
+	piece *m = t;
+	if(!ini)
+		m = buscar_ultimo(t);
+
+	piece *l;
+	for(l=p;p!=NULL;l=l->prox)
+		if((l->right == m->right) || (l->right == m->left) || (l->left == m->right) || (l->left == m->left))
+		{
+			retorno = true;
+			break;
+		}
+
+	return retorno;
+}
+
+void abrir_menu()
+{
+	bool menu=true;
+
+	while(menu)
 	{
 		system("clear");
-		mostrar(table);
+		int escolha;
+		printf("\n  //------------------------//");
+		printf("\n  //         Dominó         //");
+		printf("\n  //------------------------//");
+		printf("\n  1 - Iniciar jogo\n  2 - Sair");
+		printf("\n\n  Sua escolha: ");
+		scanf("%i",&escolha);
+		switch(escolha)
+		{
+			case 1:
+				jogar();
+			break;
+			case 2:
+				menu = false;
+				system("clear");
+			break;
+		}
+	}
+}
+
+void jogar()
+{
+	piece *lot=NULL,*player=NULL,*boot=NULL,*table=NULL;
+	bool jogando = true, player_turn=true;
+	// Inicializando //
+	lot = init_lot(lot);
+	player = init_player(player,&lot);
+	boot = init_player(boot,&lot);
+	// Tela de jogo //
+	system("clear");
+	while(jogando)
+	{
+		bool comprar = true;
+		while(player_turn)
+		{
+			mostrar(table);
+			mostrar(lot);
+			mostrar(boot);
+			mostrar(player);
+			int escolha;
+			printf("\n  //------------------------//");
+			printf("\n  //     Ações possíveis    //");
+			printf("\n  //------------------------//");
+			if(pode_jogar(player,table,true))
+				printf("\n  1 - Jogar no início");
+			if(pode_jogar(player,table,false))
+				printf("\n  2 - Jogar no fim");
+			if((lot != NULL) && comprar)
+				printf("\n  3 - Comprar");
+			else
+				printf("\n  3 - Passar");
+			printf("\n  4 - Desistir");
+			printf("\n\n  Sua escolha: ");
+			scanf("%i",&escolha);
+			switch(escolha)
+			{
+				case 1:
+					if(pode_jogar(player,table,true))
+					{
+						player_turn = false;
+					}
+				break;
+				case 2:
+					if(pode_jogar(player,table,false))
+					{
+						player_turn = false;
+					}
+				break;
+				case 3:
+					if(comprar && (lot != NULL))
+					{
+						comprar = false;
+						trocar_aleatoriamente(&player,&lot);
+					}
+					else
+						player_turn = false;
+				break;
+				case 4:
+					player_turn = false;
+					jogando = false;
+				break;
+			}
+			if(!player_turn && jogando)
+				comprar = true;
+			while(!player_turn && jogando)
+				boot_ia(&boot,&table,&lot,&comprar,&player_turn);
+			system("clear");
+		}
+	}
+	// Limpando listas //
+	limpar(lot);
+	limpar(player);
+	limpar(boot);
+	limpar(table);
+}
+
+void boot_ia(piece **boot, piece **table, piece **lot,bool *comprar,bool *player_turn)
+{
+	// VERSÃO APENAS PARA TESTES //
+	if(pode_jogar(*boot,*table,true))
+	{
+		piece *l,*first=*table;
+		for(l=*boot;l!=NULL;l=l->prox)
+			if((first == NULL) || (l->right == first->right) || (l->right == first->left) || (l->left == first->right) || (l->left == first->left))
+			{
+				trocar(table,boot,l->right,l->left,true);
+				break;
+			}
+		*player_turn = true;
+	}
+	else if(pode_jogar(*boot,*table,false))
+	{
+		piece *l,*last=buscar_ultimo(*table);
+		for(l=*boot;l!=NULL;l=l->prox)
+			if((l->right == last->right) || (l->right == last->left) || (l->left == last->right) || (l->left == last->left))
+			{
+				trocar(table,boot,l->right,l->left,false);
+				break;
+			}
+		*player_turn = true;
+	}
+	else if(*comprar && (*lot != NULL))
+	{
+		*comprar = false;
+		trocar_aleatoriamente(boot,lot);
+	}
+	else
+		*player_turn = true;
+}
+
+void testar_vencedor(piece *player,piece *boot,bool *jogando)
+{
+	if((player == NULL) || (boot == NULL))
+	{
+		char vencedor[4];
+		if(player == NULL)
+			strcpy(vencedor,"Você");
+		else if(boot == NULL)
+			strcpy(vencedor,"Boot");
+		*jogando = false;
+		system("clear");
+		printf("\n  %s venceu!\n\n",vencedor);
+		system("read -p \"Pressione enter para continuar\" Saindo");
 	}
 }
