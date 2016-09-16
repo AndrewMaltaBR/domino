@@ -21,19 +21,21 @@ void trocar_aleatoriamente(piece ** p,piece ** l);
 piece * deletar(piece * p,int i,int j);
 void limpar(piece * p);
 void mostrar(piece * p,bool jogando);
+void imprimir(piece *l);
+void imprimirh(piece *l, char ** v, int i);
+void imprimirplayer(piece *l);
 int contar(piece * p);
 piece * buscar_ultimo(piece * p);
 bool pode_jogar(piece * p,piece * t,bool ini);
 void abrir_menu();
 void jogar();
-void boot_ia(piece **boot, piece **table, piece **lot,bool *comprar,bool *player_turn);
-bool testar_vencedor(piece *player,piece *boot);
+void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_turn);
+bool testar_vencedor(piece *player,piece *bot);
 void jogada(piece ** player,piece ** table,bool * player_turn);
-void inverter_info(piece * p);
+void inverter_info(piece ** p);
 
 int main()
 {
-	
 	abrir_menu();
 	system("cls");
 	//system("clear");
@@ -65,8 +67,8 @@ piece * inserir_fim(piece * p,int i,int j)
 		return inserir_ini(p,i,j);
 	piece * last = buscar_ultimo(p);
 	piece * new = (piece *) malloc(sizeof(piece));
-	new->right = i;
-	new->left = j;
+	new->left = i;
+	new->right = j;
 	new->prox = NULL;
 	new->ante = last;
 	last->prox = new;
@@ -76,8 +78,8 @@ piece * inserir_fim(piece * p,int i,int j)
 piece * inserir_ini(piece * p,int i,int j)
 {
 	piece * new = (piece *) malloc(sizeof(piece));
-	new->right = i;
-	new->left = j;
+	new->left = i;
+	new->right = j;
 	new->ante = NULL;
 	new->prox = p;
 	return new;
@@ -104,7 +106,7 @@ void trocar_aleatoriamente(piece ** p,piece ** l)
 	for(j=0;j<=n;j++)
 	{
 		if(j == n)
-			trocar(p,l,m->right,m->left,false);
+			trocar(p,l,m->left,m->right,false);
 		if(m->prox != NULL)
 			m = m->prox;
 	}
@@ -114,7 +116,7 @@ piece * deletar(piece * p,int i,int j)
 {
 	piece * l = p;
 
-	while((l != NULL) && ((l->right != i) || (l->left != j)))
+	while((l != NULL) && ((l->right != j) || (l->left != i)))
 		l = l->prox;
 	if(l == NULL)
 		return p;
@@ -145,7 +147,7 @@ void limpar(piece * p)
 		for(n=p;n->prox!=NULL;n=m)
 		{
 			m = n->prox;
-			p = deletar(p,n->right,n->left);
+			p = deletar(p,n->left,n->right);
 		}
 	}
 }
@@ -155,7 +157,7 @@ void mostrar(piece * p,bool jogando)
 	piece * n;
 	printf("\n");
 	for(n=p;n!=NULL;n=n->prox)
-		printf("|%d|%d|",n->right,n->left);
+		printf("|%d|%d|",n->left,n->right);
 
 	if(jogando)
 	{
@@ -165,6 +167,390 @@ void mostrar(piece * p,bool jogando)
 			printf("  %i  ",i);
 	}
 	printf("\n");
+}
+
+void imprimir(piece *l)
+{
+	char ** v;
+	piece *p = l;
+	int n = contar(l),i,j,k,a,sobe,c;
+	v =  calloc (18, sizeof(char *));
+	if (v == NULL) 
+	{
+	   printf ("** Erro: Memoria Insuficiente **");
+	}
+	else
+	{
+		for (i = 0; i < 18; i++) {
+			v[i] =  calloc (150*n, sizeof(char));
+		    if (v[i] == NULL) {
+		       printf ("** Erro: Memoria Insuficiente **");
+		    }
+		    strcpy(v[i]," ");
+		}
+	}
+
+	j = 0;
+	a = 0;
+	sobe = 0;
+	c= 0;
+
+	for (p = p; p != NULL; p = p->prox)
+	{	
+		if (sobe == 1 && j == 0)
+		{
+			j = 9;
+		}
+
+		if (sobe == 1 && j == 18 && c == 0)
+		{
+			j = 0;
+			c = 1;
+		}
+
+		if ((j % 18) == 0 && a != 1 && j != 0)
+		{
+			if (sobe == 0)
+			{
+				imprimirh(p,v,i-5);
+				sobe = 1;
+			}
+			else
+			{
+				imprimirh(p,v,i-18);
+				sobe = 0;
+			}
+			c = 0;
+			a=1;
+			j=0;
+			continue;
+		}
+
+		a=0;		
+
+		for (i = j; abs(j - i) < 9; i++)
+		{
+			if (sobe == 0)
+			{
+				if ((i-j) < 4)
+				{
+					k = p->right;
+				}
+				else
+				{
+					k = p->left; 
+				}
+			}
+			else
+			{
+				if ((i-j) < 4)
+				{
+					k = p->left;
+				}
+				else
+				{
+					k = p->right; 
+				}
+			}
+
+			if (i == j || i == (j+4) || i == (j+8))
+			{
+				strcat(v[i], "  - - -  ");
+			}
+
+			if ((i-j) == 1 || (i-j) == 5)
+			{
+				if(k == 2 || k == 3)
+				{
+					strcat(v[i],"| 0     |");
+				}
+				else
+				{ 
+					if (k == 4 || k == 5 || k == 6)
+					{
+						strcat(v[i],"| 0   0 |");
+					}
+					else 
+					{
+						strcat(v[i],"|       |");
+					}
+				}
+			}
+
+			if ((i-j) == 2 || (i-j) == 6)
+			{
+				if(k == 1 || k == 3 || k == 5)
+				{
+					strcat(v[i],"|   0   |");
+				}
+				else
+				{ 
+					if (k == 6)
+					{
+						strcat(v[i],"| 0   0 |");
+					}
+					else 
+					{
+						strcat(v[i],"|       |");
+					}
+				}
+			}
+
+			if ((i-j) == 3 || (i-j) == 7)
+			{
+				if(k == 2 || k == 3)
+				{
+					strcat(v[i],"|     0 |");
+				}
+				else
+				{ 
+					if (k == 6 || k == 5 || k == 4)
+					{
+						strcat(v[i],"| 0   0 |");
+					}
+					else 
+					{
+						strcat(v[i],"|       |");
+					}
+				}
+			}
+
+		}
+		if (sobe == 1 && i == 9 && c == 1)
+		{
+			i = 18;
+		}
+
+		j = i;
+	}
+
+	for (i = 0; i < 18; i++)
+	{
+		printf("%s\n",v[i]);
+	}
+
+	free(v);
+}
+
+void imprimirh (piece *l, char ** v, int a)
+{
+	int j,i,k;
+
+	if (a == 13)
+	{
+		for (i = 0; i < 13; ++i)
+		{
+			strcat(v[i],"           ");
+		}
+		for (i = 13; i < 18; ++i)
+		{
+			strcat(v[i]," ");
+		}
+	}
+
+	if (a == 0)
+	{
+		for (i = 5; i < 18; ++i)
+		{
+			strcat(v[i],"           ");
+		}
+		for (i = 0; i < 5; ++i)
+		{
+			strcat(v[i]," ");
+		}
+	}
+
+	for (i = a; i < (a+5); i++)
+	{
+		if ((i == a) || (i == (a+4)))
+		{
+			strcat(v[i]," --- ---  ");
+		}
+		else
+		{
+			k = l->right;
+			for (j = 0; j < 2; j++)
+			{
+				if (i == (a+1))
+				{
+					if (k == 6)
+					{
+						strcat(v[i],"|000");
+					}
+					else
+					{
+						if (k == 5 || k == 4)
+						{
+							strcat(v[i],"|0 0");
+						}
+						else
+						{
+							if (k == 3 || k == 2)
+							{
+								strcat(v[i],"|  0");
+							}
+							else
+							{
+								strcat(v[i],"|   ");
+							}
+						}
+					}
+				}
+
+				if (i == (a+2))
+				{
+					if (k == 6 || k == 0 || k == 4 || k == 2)
+					{
+						strcat(v[i],"|   ");
+					}
+					else
+					{
+						strcat(v[i],"| 0 ");
+					}
+				}
+
+				if (i == (a+3))
+				{
+					if (k == 6)
+					{
+						strcat(v[i],"|000");
+					}
+					else
+					{
+						if (k == 5 || k == 4)
+						{
+							strcat(v[i],"|0 0");
+						}
+						else
+						{
+							if (k == 3 || k == 2)
+							{
+								strcat(v[i],"|0  ");
+							}
+							else
+							{
+								strcat(v[i],"|   ");
+							}
+						}
+					}
+				}
+				k = l->left;
+			}
+			strcat(v[i],"| ");
+		}
+	}
+}
+
+void imprimirplayer(piece *l)
+{
+	char ** v;
+	piece *p = l;
+	int n = contar(l),i,k;
+	printf("\n//-------------Suas-pecas-------------//\n");
+	v =  calloc (9, sizeof(char *));
+	if (v == NULL) 
+	{
+	   printf ("** Erro: Memoria Insuficiente **");
+	}
+	else
+	{
+		for (i = 0; i < 9; i++) {
+			v[i] =  calloc (10*n, sizeof(char));
+		    if (v[i] == NULL) {
+		       printf ("** Erro: Memoria Insuficiente **");
+		    }
+		    strcpy(v[i]," ");
+		}
+	}
+	for (p = p; p != NULL; p = p->prox)
+	{
+		for (i = 0; i < 9; i++)
+		{
+			if (i < 4)
+			{
+				k = p->right;
+			}
+			else
+			{
+				k = p->left; 
+			}
+
+			if (i == 0 || i == 4 || i == 8)
+			{
+				strcat(v[i], "  - - -   ");
+			}
+
+			if (i == 1 || i == 5)
+			{
+				if(k == 2 || k == 3)
+				{
+					strcat(v[i],"| 0     | ");
+				}
+				else
+				{ 
+					if (k == 4 || k == 5 || k == 6)
+					{
+						strcat(v[i],"| 0   0 | ");
+					}
+					else 
+					{
+						strcat(v[i],"|       | ");
+					}
+				}
+			}
+
+			if (i == 2 || i == 6)
+			{
+				if(k == 1 || k == 3 || k == 5)
+				{
+					strcat(v[i],"|   0   | ");
+				}
+				else
+				{ 
+					if (k == 6)
+					{
+						strcat(v[i],"| 0   0 | ");
+					}
+					else 
+					{
+						strcat(v[i],"|       | ");
+					}
+				}
+			}
+
+			if (i == 3 || i == 7)
+			{
+				if(k == 2 || k == 3)
+				{
+					strcat(v[i],"|     0 | ");
+				}
+				else
+				{ 
+					if (k == 6 || k == 5 || k == 4)
+					{
+						strcat(v[i],"| 0   0 | ");
+					}
+					else 
+					{
+						strcat(v[i],"|       | ");
+					}
+				}
+			}
+
+		}
+	}
+
+	for (i = 0; i < 9; i++)
+	{
+		printf("%s\n",v[i]);
+	}
+
+	for (i = 1; i <= contar(l); ++i)
+	{
+		printf("     %d    ",i );
+	}
+
+	free(v);
 }
 
 int contar(piece * p)
@@ -201,7 +587,12 @@ bool pode_jogar(piece * p,piece * t,bool ini)
 		piece *l;
 		for(l=p;l!=NULL;l=l->prox)
 		{
-			if((l->right == m->right) || (l->right == m->left) || (l->left == m->right) || (l->left == m->left))
+			if(ini && ((m->left == l->left) || (m->left == l->right)))
+			{
+				retorno = true;
+				break;
+			}
+			else if(!ini && ((m->right == l->left) || (m->right == l->right)))
 			{
 				retorno = true;
 				break;
@@ -243,12 +634,12 @@ void abrir_menu()
 
 void jogar()
 {
-	piece *lot=NULL,*player=NULL,*boot=NULL,*table=NULL;
+	piece *lot=NULL,*player=NULL,*bot=NULL,*table=NULL;
 	bool jogando = true, player_turn=true;
 	// Inicializando //
 	lot = init_lot(lot);
 	player = init_player(player,&lot);
-	boot = init_player(boot,&lot);
+	bot = init_player(bot,&lot);
 	// Tela de jogo //
 	while(jogando)
 	{
@@ -257,8 +648,9 @@ void jogar()
 		{
 			system("cls");
 			//system("clear");
-			mostrar(table,false);
-			mostrar(player,false);
+			imprimir(table);
+			imprimirplayer(player);
+
 			int escolha;
 			printf("\n//------------------------//");
 			printf("\n//     Acoes possiveis    //");
@@ -290,7 +682,7 @@ void jogar()
 						player_turn = false;
 				break;
 				case 3:
-					limpar(boot);
+					limpar(bot);
 					player_turn = false;
 					jogando = false;
 				break;
@@ -300,12 +692,12 @@ void jogar()
 		if(!player_turn && jogando)
 			comprar = true;
 		while(!player_turn && jogando)
-			boot_ia(&boot,&table,&lot,&comprar,&player_turn);
+			bot_ia(&bot,&table,&lot,&comprar,&player_turn);
 
 		if(jogando)
 		{
-			jogando = testar_vencedor(player,boot);
-			player_turn = testar_vencedor(player,boot);
+			jogando = testar_vencedor(player,bot);
+			player_turn = testar_vencedor(player,bot);
 		}
 	}
 
@@ -314,41 +706,42 @@ void jogar()
 	if(player == NULL)
 		printf("\n  Voce venceu!\n\n");
 	else
-		printf("\n  Boot venceu!\n\n");
+		printf("\n  Bot venceu!\n\n");
 	system("pause");
 	//system("read -p \"Pressione enter para continuar\" Saindo");	
 	// Limpando listas //
 	limpar(lot);
 	limpar(player);
-	limpar(boot);
+	limpar(bot);
 	limpar(table);
 }
 
-void boot_ia(piece **boot, piece **table, piece **lot,bool *comprar,bool *player_turn)
+void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_turn)
 {
 	// VERSÃO APENAS PARA TESTES //
-	if(pode_jogar(*boot,*table,true))
+	if(pode_jogar(*bot,*table,true))
 	{
 		piece *l,*first=*table;
-		for(l=*boot;l!=NULL;l=l->prox)
+		for(l=*bot;l!=NULL;l=l->prox)
 			if((first == NULL) || (first->left == l->left) || (first->left == l->right))
 			{
-				if((first == NULL) && (first->left == l->left))
-					inverter_info(l);
-				trocar(table,boot,l->right,l->left,true);
+				if((first != NULL) && (first->left == l->left))
+					inverter_info(&l);
+
+				trocar(table,bot,l->left,l->right,true);
 				break;
 			}
 		*player_turn = true;
 	}
-	else if(pode_jogar(*boot,*table,false))
+	else if(pode_jogar(*bot,*table,false))
 	{
 		piece *l,*last=buscar_ultimo(*table);
-		for(l=*boot;l!=NULL;l=l->prox)
-			if((l->right == last->right) || (last->right == l->left) || (last->right == l->right))
+		for(l=*bot;l!=NULL;l=l->prox)
+			if((last == NULL) || (last->right == l->left) || (last->right == l->right))
 			{
-				if((last == NULL) && (last->right == l->right))
-					inverter_info(l);
-				trocar(table,boot,l->right,l->left,false);
+				if((last != NULL) && (last->right == l->right))
+					inverter_info(&l);
+				trocar(table,bot,l->left,l->right,false);
 				break;
 			}
 		*player_turn = true;
@@ -356,15 +749,15 @@ void boot_ia(piece **boot, piece **table, piece **lot,bool *comprar,bool *player
 	else if(*comprar && (*lot != NULL))
 	{
 		*comprar = false;
-		trocar_aleatoriamente(boot,lot);
+		trocar_aleatoriamente(bot,lot);
 	}
 	else
 		*player_turn = true;
 }
 
-bool testar_vencedor(piece *player,piece *boot)
+bool testar_vencedor(piece *player,piece *bot)
 {
-	if((player == NULL) || (boot == NULL))
+	if((player == NULL) || (bot == NULL))
 		return false;
 	return true;
 }
@@ -377,8 +770,8 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 		system("cls");
 		//system("clear");
 		int escolha;
-		mostrar(*table,false);
-		mostrar(*player,true);
+		imprimir(*table);
+		imprimirplayer(*player);
 		printf("\n//---------------------------------------------//");
 		printf("\n// Digite qual peca quer jogar ou 0 pra voltar //");
 		printf("\n//---------------------------------------------//");
@@ -386,7 +779,7 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 		scanf("%i",&escolha);
 		if(escolha == 0)
 			ativo = false;
-		else if(escolha <= contar(*player)+1)
+		else if(escolha <= contar(*player))
 		{
 			bool jogou = false;
 			int i = 1;
@@ -401,7 +794,7 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 			{
 				system("cls");
 				//system("clear");
-				mostrar(*table,false);
+				imprimir(*table);
 				printf("\n//------------------------//");
 				printf("\n//       Onde jogar?      //");
 				printf("\n//------------------------//");
@@ -420,9 +813,9 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 						piece * first = *table;
 						if((first == NULL) || (first->left == p->left) || (first->left == p->right))
 						{
-							if(first->left == p->left)
-								inverter_info(p);
-							trocar(table,player,p->right,p->left,true);
+							if((first != NULL) && (first->left == p->left))
+								inverter_info(&p);
+							trocar(table,player,p->left,p->right,true);
 							jogou = true;
 							*player_turn = false;
 							ativo = false;
@@ -437,9 +830,9 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 						piece * last = buscar_ultimo(*table);
 						if((first == NULL) || (last->right == p->left) || (last->right == p->right))
 						{
-							if(first->right == p->right)
-								inverter_info(p);
-							trocar(table,player,p->right,p->left,false);
+							if((first != NULL) && (first->right == p->right))
+								inverter_info(&p);
+							trocar(table,player,p->left,p->right,false);
 							jogou = true;
 							*player_turn = false;
 							ativo = false;
@@ -457,9 +850,10 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 }
 
 
-void inverter_info(piece * p)
+void inverter_info(piece ** p)
 {
-	int aux = p->right;
-	p->right = p->left;
-	p->left = aux;
+	piece *l=*p;
+	int aux = l->right;
+	l->right = l->left;
+	l->left = aux;
 }
