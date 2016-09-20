@@ -4,12 +4,12 @@
 #include <time.h>
 #include <stdbool.h>
 
-typedef struct _piece
+typedef struct piece
 {
 	int right;
 	int left;
-	struct _piece* ante;
-	struct _piece* prox;
+	struct piece* ante;
+	struct piece* prox;
 }piece;
 
 piece * init_lot(piece * p);
@@ -20,7 +20,6 @@ void trocar(piece ** p,piece ** l,int i,int j,bool ini);
 void trocar_aleatoriamente(piece ** p,piece ** l);
 piece * deletar(piece * p,int i,int j);
 void limpar(piece * p);
-void mostrar(piece * p,bool jogando);
 void imprimir(piece *l);
 void imprimirh(piece *l, char ** v, int i);
 void imprimirplayer(piece *l);
@@ -37,8 +36,8 @@ void inverter_info(piece ** p);
 int main()
 {
 	abrir_menu();
-	system("cls");
-	//system("clear");
+	//system("cls");
+	system("clear");
 	return 0;
 }
 
@@ -66,7 +65,12 @@ piece * inserir_fim(piece * p,int i,int j)
 	if(p == NULL)
 		return inserir_ini(p,i,j);
 	piece * last = buscar_ultimo(p);
-	piece * new = (piece *) malloc(sizeof(piece));
+	piece * new = (piece *) calloc(1,sizeof(piece));
+	if(new == NULL)
+	{
+		printf("\n**Erro ao alocar**\n");
+		getchar();
+	}
 	new->left = i;
 	new->right = j;
 	new->prox = NULL;
@@ -77,7 +81,12 @@ piece * inserir_fim(piece * p,int i,int j)
 
 piece * inserir_ini(piece * p,int i,int j)
 {
-	piece * new = (piece *) malloc(sizeof(piece));
+	piece * new = (piece *) calloc(1,sizeof(piece));
+	if(new == NULL)
+	{
+		printf("\n**Erro ao alocar**\n");
+		getchar();
+	}
 	new->left = i;
 	new->right = j;
 	new->ante = NULL;
@@ -152,23 +161,6 @@ void limpar(piece * p)
 	}
 }
 
-void mostrar(piece * p,bool jogando)
-{
-	piece * n;
-	printf("\n");
-	for(n=p;n!=NULL;n=n->prox)
-		printf("|%d|%d|",n->left,n->right);
-
-	if(jogando)
-	{
-		printf("\n");
-		int i;
-		for(i=1;i<contar(p)+1;i++)
-			printf("  %i  ",i);
-	}
-	printf("\n");
-}
-
 void imprimir(piece *l)
 {
 	char ** v;
@@ -178,13 +170,15 @@ void imprimir(piece *l)
 	if (v == NULL) 
 	{
 	   printf ("** Erro: Memoria Insuficiente **");
+	   getchar();
 	}
 	else
 	{
 		for (i = 0; i < 18; i++) {
-			v[i] =  calloc (150*n, sizeof(char));
+			v[i] =  calloc (20*n, sizeof(char));
 		    if (v[i] == NULL) {
 		       printf ("** Erro: Memoria Insuficiente **");
+	   		   getchar();
 		    }
 		    strcpy(v[i]," ");
 		}
@@ -234,22 +228,22 @@ void imprimir(piece *l)
 			{
 				if ((i-j) < 4)
 				{
-					k = p->right;
+					k = p->left;
 				}
 				else
 				{
-					k = p->left; 
+					k = p->right; 
 				}
 			}
 			else
 			{
 				if ((i-j) < 4)
 				{
-					k = p->left;
+					k = p->right;
 				}
 				else
 				{
-					k = p->right; 
+					k = p->left; 
 				}
 			}
 
@@ -329,6 +323,8 @@ void imprimir(piece *l)
 		printf("%s\n",v[i]);
 	}
 
+	for(i=0;i<18;i++)
+		free(v[i]);
 	free(v);
 }
 
@@ -340,7 +336,7 @@ void imprimirh (piece *l, char ** v, int a)
 	{
 		for (i = 0; i < 13; ++i)
 		{
-			strcat(v[i],"           ");
+			strcat(v[i],"               ");
 		}
 		for (i = 13; i < 18; ++i)
 		{
@@ -352,7 +348,7 @@ void imprimirh (piece *l, char ** v, int a)
 	{
 		for (i = 5; i < 18; ++i)
 		{
-			strcat(v[i],"           ");
+			strcat(v[i],"               ");
 		}
 		for (i = 0; i < 5; ++i)
 		{
@@ -364,34 +360,34 @@ void imprimirh (piece *l, char ** v, int a)
 	{
 		if ((i == a) || (i == (a+4)))
 		{
-			strcat(v[i]," --- ---  ");
+			strcat(v[i]," ----- -----  ");
 		}
 		else
 		{
-			k = l->right;
+			k = l->left;
 			for (j = 0; j < 2; j++)
 			{
 				if (i == (a+1))
 				{
 					if (k == 6)
 					{
-						strcat(v[i],"|000");
+						strcat(v[i],"|0 0 0");
 					}
 					else
 					{
 						if (k == 5 || k == 4)
 						{
-							strcat(v[i],"|0 0");
+							strcat(v[i],"|0   0");
 						}
 						else
 						{
 							if (k == 3 || k == 2)
 							{
-								strcat(v[i],"|  0");
+								strcat(v[i],"|    0");
 							}
 							else
 							{
-								strcat(v[i],"|   ");
+								strcat(v[i],"|     ");
 							}
 						}
 					}
@@ -401,11 +397,11 @@ void imprimirh (piece *l, char ** v, int a)
 				{
 					if (k == 6 || k == 0 || k == 4 || k == 2)
 					{
-						strcat(v[i],"|   ");
+						strcat(v[i],"|     ");
 					}
 					else
 					{
-						strcat(v[i],"| 0 ");
+						strcat(v[i],"|  0  ");
 					}
 				}
 
@@ -413,28 +409,28 @@ void imprimirh (piece *l, char ** v, int a)
 				{
 					if (k == 6)
 					{
-						strcat(v[i],"|000");
+						strcat(v[i],"|0 0 0");
 					}
 					else
 					{
 						if (k == 5 || k == 4)
 						{
-							strcat(v[i],"|0 0");
+							strcat(v[i],"|0   0");
 						}
 						else
 						{
 							if (k == 3 || k == 2)
 							{
-								strcat(v[i],"|0  ");
+								strcat(v[i],"|0    ");
 							}
 							else
 							{
-								strcat(v[i],"|   ");
+								strcat(v[i],"|     ");
 							}
 						}
 					}
 				}
-				k = l->left;
+				k = l->right;
 			}
 			strcat(v[i],"| ");
 		}
@@ -549,7 +545,8 @@ void imprimirplayer(piece *l)
 	{
 		printf("     %d    ",i );
 	}
-
+	for(i=0;i<9;i++)
+		free(v[i]);
 	free(v);
 }
 
@@ -567,10 +564,14 @@ int contar(piece * p)
 
 piece * buscar_ultimo(piece * p)
 {
-	piece * last = p;
-	while(last->prox != NULL)
-		last = last->prox;
-	return last;
+	if(p != NULL)
+	{
+		piece * last = p;
+		while(last->prox != NULL)
+			last = last->prox;
+		return last;
+	}
+	return NULL;
 }
 
 bool pode_jogar(piece * p,piece * t,bool ini)
@@ -609,15 +610,15 @@ void abrir_menu()
 
 	while(menu)
 	{
-		system("cls");
-		//system("clear");
+		//system("cls");
+		system("clear");
 		int escolha;
 		printf("\n//------------------------//");
 		printf("\n//         Domino         //");
 		printf("\n//------------------------//");
 		printf("\n1 - Iniciar jogo\n2 - Sair");
 		printf("\n\n  Sua escolha: ");
-		scanf("%i",&escolha);
+		scanf("%d",&escolha);
 		switch(escolha)
 		{
 			case 1:
@@ -625,8 +626,8 @@ void abrir_menu()
 			break;
 			case 2:
 				menu = false;
-				system("cls");
-				//system("clear");
+				//system("cls");
+				system("clear");
 			break;
 		}
 	}
@@ -646,8 +647,8 @@ void jogar()
 		bool comprar = true;
 		while(player_turn)
 		{
-			system("cls");
-			//system("clear");
+			//system("cls");
+			system("clear");
 			imprimir(table);
 			imprimirplayer(player);
 
@@ -663,7 +664,7 @@ void jogar()
 				printf("\n2 - Passar");
 			printf("\n3 - Desistir");
 			printf("\n\n  Sua escolha: ");
-			scanf("%i",&escolha);
+			scanf("%d",&escolha);
 			switch(escolha)
 			{
 				case 1:
@@ -701,8 +702,8 @@ void jogar()
 		}
 	}
 
-	system("cls");
-	//system("clear");
+	//system("cls");
+	system("clear");
 	if(player == NULL)
 		printf("\n  Voce venceu!\n\n");
 	else
@@ -767,8 +768,8 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 	bool ativo = true;
 	while(ativo)
 	{
-		system("cls");
-		//system("clear");
+		//system("cls");
+		system("clear");
 		int escolha;
 		imprimir(*table);
 		imprimirplayer(*player);
@@ -776,7 +777,7 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 		printf("\n// Digite qual peca quer jogar ou 0 pra voltar //");
 		printf("\n//---------------------------------------------//");
 		printf("\n\n  Sua escolha: ");
-		scanf("%i",&escolha);
+		scanf("%d",&escolha);
 		if(escolha == 0)
 			ativo = false;
 		else if(escolha <= contar(*player))
@@ -792,8 +793,8 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 			}
 			while(!jogou)
 			{
-				system("cls");
-				//system("clear");
+				//system("cls");
+				system("clear");
 				imprimir(*table);
 				printf("\n//------------------------//");
 				printf("\n//       Onde jogar?      //");
@@ -802,7 +803,7 @@ void jogada(piece ** player,piece ** table,bool * player_turn)
 				printf("\n1 - No inicio");
 				printf("\n2 - No fim");
 				printf("\n\n  Sua escolha: ");
-				scanf("%i",&escolha);
+				scanf("%d",&escolha);
 
 				switch(escolha)
 				{
