@@ -29,7 +29,7 @@ bool pode_jogar(piece * p,piece * t,bool ini,piece *d);
 void abrir_menu();
 void jogar();
 void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_turn);
-bool testar_vencedor(piece *player,piece *bot);
+bool testar_vencedor(piece *player,piece *bot,piece *table,piece *lot);
 void inverter_info(piece ** p);
 void clear();
 
@@ -783,16 +783,17 @@ void jogar()
 
 		if(jogando)
 		{
-			jogando = testar_vencedor(player,bot);
-			player_turn = testar_vencedor(player,bot);
+			jogando = testar_vencedor(player,bot,table,lot);
+			player_turn = testar_vencedor(player,bot,table,lot);
 		}
 	}
 
 	clear();
+	imprimir(table);
 	if(player == NULL)
-		printf("\n  Voce venceu!\n\n");
+		printf("\n\n  Voce venceu!\n\n");
 	else
-		printf("\n  Bot venceu!\n\n");
+		printf("\n\n  Bot venceu!\n\n");
 	system("pause");
 	//system("read -p \"Pressione enter para continuar\" Saindo");	
 	// Limpando listas //
@@ -854,19 +855,22 @@ void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_t
 		*player_turn = true;
 }
 
-bool testar_vencedor(piece *player,piece *bot)
+bool testar_vencedor(piece *player,piece *bot,piece *table,piece *lot)
 {
 	if((player == NULL) || (bot == NULL))
+		return false;
+	else if((lot == NULL) && (!pode_jogar(bot,table,true,NULL)) && (!pode_jogar(bot,table,false,NULL)) && (!pode_jogar(player,table,true,NULL)) && (!pode_jogar(player,table,false,NULL)))
 		return false;
 	return true;
 }
 
 void inverter_info(piece ** p)
 {
-	piece *l=*p;
-	int aux = l->right;
-	l->right = l->left;
-	l->left = aux;
+	printf("\n\n   INVERTEEEOOOO   \n\n");
+	system("pause");
+	int aux = (*p)->right;
+	(*p)->right = (*p)->left;
+	(*p)->left = aux;
 }
 
 void clear()
