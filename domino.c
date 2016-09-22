@@ -25,18 +25,18 @@ void imprimirh(piece *l, char ** v, int i);
 void imprimirplayer(piece *l);
 int contar(piece * p);
 piece * buscar_ultimo(piece * p);
-bool pode_jogar(piece * p,piece * t,bool ini);
+bool pode_jogar(piece * p,piece * t,bool ini,piece *d);
 void abrir_menu();
 void jogar();
 void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_turn);
 bool testar_vencedor(piece *player,piece *bot);
 void inverter_info(piece ** p);
+void clear();
 
 int main()
 {
 	abrir_menu();
-	system("cls");
-	//system("clear");
+	clear();
 	return 0;
 }
 
@@ -573,7 +573,7 @@ piece * buscar_ultimo(piece * p)
 	return NULL;
 }
 
-bool pode_jogar(piece * p,piece * t,bool ini)
+bool pode_jogar(piece * p,piece * t,bool ini,piece *d)
 {
 	bool retorno = false;
 	if(t == NULL)
@@ -583,19 +583,28 @@ bool pode_jogar(piece * p,piece * t,bool ini)
 		piece *m = t;
 		if(!ini)
 			m = buscar_ultimo(t);
-
-		piece *l;
-		for(l=p;l!=NULL;l=l->prox)
+		if(d != NULL)
 		{
-			if(ini && ((m->left == l->left) || (m->left == l->right)))
-			{
+			if(ini && ((m->left == d->left) || (m->left == d->right)))
 				retorno = true;
-				break;
-			}
-			else if(!ini && ((m->right == l->left) || (m->right == l->right)))
-			{
+			else if(!ini && ((m->right == d->left) || (m->right == d->right)))
 				retorno = true;
-				break;
+		}
+		else
+		{
+			piece *l;
+			for(l=p;l!=NULL;l=l->prox)
+			{
+				if(ini && ((m->left == l->left) || (m->left == l->right)))
+				{
+					retorno = true;
+					break;
+				}
+				else if(!ini && ((m->right == l->left) || (m->right == l->right)))
+				{
+					retorno = true;
+					break;
+				}
 			}
 		}
 	}
@@ -609,8 +618,7 @@ void abrir_menu()
 
 	while(menu)
 	{
-		system("cls");
-		//system("clear");
+		clear();
 		int escolha;
 		printf("\n//------------------------//");
 		printf("\n//         Domino         //");
@@ -625,8 +633,7 @@ void abrir_menu()
 			break;
 			case 2:
 				menu = false;
-				system("cls");
-				//system("clear");
+				clear();
 			break;
 		}
 	}
@@ -647,7 +654,7 @@ void jogar()
 		piece *p;
 		if(!encontrou)
 			for(p=player;p!=NULL;p=p->prox)
-				if((p->left = i) && (p->right == i))
+				if((p->left == i) && (p->right == i))
 				{
 					trocar(&table,&player,i,i,true);
 					encontrou = true;
@@ -656,7 +663,7 @@ void jogar()
 				}
 		if(!encontrou)
 			for(p=bot;p!=NULL;p=p->prox)
-				if((p->left = i) && (p->right == i))
+				if((p->left == i) && (p->right == i))
 				{
 					trocar(&table,&bot,i,i,true);
 					encontrou = true;
@@ -671,16 +678,16 @@ void jogar()
 		bool comprar = true;
 		while(player_turn)
 		{
-			system("cls");
-			//system("clear");
+			clear();
 			imprimir(table);
+			imprimirplayer(bot);
 			imprimirplayer(player);
 
 			int escolha;
 			printf("\n//------------------------//");
 			printf("\n//     Acoes possiveis    //");
 			printf("\n//------------------------//");
-			if(pode_jogar(player,table,true) || pode_jogar(player,table,false))
+			if(pode_jogar(player,table,true,NULL) || pode_jogar(player,table,false,NULL))
 				printf("\nX - Jogar peca");
 			if((lot != NULL) && comprar)
 				printf("\n0 - Comprar");
@@ -700,7 +707,7 @@ void jogar()
 						player_turn = false;
 				break;
 				default:
-					if(escolha <= contar(player))
+					if((escolha <= contar(player)) && (pode_jogar(player,table,true,NULL) || pode_jogar(player,table,false,NULL)))
 					{
 						bool jogou = false;
 						int i = 1;
@@ -713,8 +720,7 @@ void jogar()
 						}
 						while(!jogou)
 						{
-							system("cls");
-							//system("clear");
+							clear();
 							imprimir(table);
 							imprimirplayer(player);
 							printf("\n//------------------------//");
@@ -740,7 +746,7 @@ void jogar()
 									}
 									else
 									{
-										printf("\n\n  Nao e possivel jogar esta peca no inicio! \n");
+										printf("\n\n  Nao e possivel jogar esta peca no inicio! \n\n");
 										system("pause");
 									}
 								break;
@@ -756,7 +762,7 @@ void jogar()
 									}
 									else
 									{
-										printf("\n\n  Nao e possivel jogar esta peca no inicio! \n");
+										printf("\n\n  Nao e possivel jogar esta peca no fim! \n\n");
 										system("pause");
 									}						
 								break;
@@ -782,8 +788,7 @@ void jogar()
 		}
 	}
 
-	system("cls");
-	//system("clear");
+	clear();
 	if(player == NULL)
 		printf("\n  Voce venceu!\n\n");
 	else
@@ -799,33 +804,46 @@ void jogar()
 
 void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_turn)
 {
-	// VERSÃO APENAS PARA TESTES //
-	if(pode_jogar(*bot,*table,true))
+	// IA 0.1 //
+	if(pode_jogar(*bot,*table,true,NULL) || pode_jogar(*bot,*table,false,NULL))
 	{
-		piece *l,*first=*table;
+		piece *l,*first=*table,*last=buscar_ultimo(*table);
+		// JOGANDO AS DOUBLES PRIMEIRO //
 		for(l=*bot;l!=NULL;l=l->prox)
-			if((first == NULL) || (first->left == l->left) || (first->left == l->right))
+			if(((first == NULL) || (first->left == l->left)) && (l->left == l->right))
 			{
+				*player_turn = true;
 				if((first != NULL) && (first->left == l->left))
 					inverter_info(&l);
-
-				trocar(table,bot,l->left,l->right,true);
+				trocar(table,bot,l->left,l->right,true);	
 				break;
 			}
-		*player_turn = true;
-	}
-	else if(pode_jogar(*bot,*table,false))
-	{
-		piece *l,*last=buscar_ultimo(*table);
-		for(l=*bot;l!=NULL;l=l->prox)
-			if((last == NULL) || (last->right == l->left) || (last->right == l->right))
+			else if(((last == NULL) || (last->right == l->left)) && (l->left == l->right))
 			{
+				*player_turn = true;
 				if((last != NULL) && (last->right == l->right))
 					inverter_info(&l);
 				trocar(table,bot,l->left,l->right,false);
 				break;
 			}
-		*player_turn = true;
+		// JOGANDO AS DEMAIS PECAS //
+		if(!*player_turn)
+			for(l=*bot;l!=NULL;l=l->prox)
+				if(((first == NULL) || (first->left == l->left) || (first->left == l->right)))
+				{
+					*player_turn = true;
+					if((first != NULL) && (first->left == l->left))
+						inverter_info(&l);
+					trocar(table,bot,l->left,l->right,true);	
+					break;
+				}
+				else if((last == NULL) || (last->right == l->left) || (last->right == l->right))
+				{
+					*player_turn = true;
+					if((last != NULL) && (last->right == l->right))
+						inverter_info(&l);
+					trocar(table,bot,l->left,l->right,false);
+				}
 	}
 	else if(*comprar && (*lot != NULL))
 	{
@@ -849,4 +867,15 @@ void inverter_info(piece ** p)
 	int aux = l->right;
 	l->right = l->left;
 	l->left = aux;
+}
+
+void clear()
+{
+    #if linux || LINUX || Linux || UNIX
+    	system("clear");
+    #elif defined WIN32 || Win32 || win32
+    	system("cls");
+    #else
+    	printf("\e[H\e[2J");
+    #endif
 }
