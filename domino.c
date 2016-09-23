@@ -836,28 +836,28 @@ void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_t
                 num[l->right]++;
         }
         // JOGANDO TRANCANDO O PLAYER //
-         for(i=0;i<7;i++)
-            if((num[i] > 3) && !(*player_turn))
-                for(l=*bot;l!=NULL;l=l->prox)
-                    if(!(*player_turn) && ((l->left == i) || (l->right == i)))
-                    {
-                        if((first != NULL) && (first->left == i))
-                        {
-                            *player_turn = true;
-                            if((first != NULL) && (first->left == l->left))
-                                inverter_info(&l);
-                            trocar(table,bot,l->left,l->right,true);
-                            break;
-                        }
-                        else if((last != NULL) && (last->right == i))
-                        {
-                            *player_turn = true;
-                            if((last != NULL) && (last->right == l->right))
-                                inverter_info(&l);
-                            trocar(table,bot,l->left,l->right,false);
-                            break;
-                        }
-                    }
+	    for(i=6;i<=0;i++)
+	        if((num[i] > 3) && !(*player_turn))
+	            for(l=*bot;l!=NULL;l=l->prox)
+	                if(!(*player_turn) && ((l->left == i) || (l->right == i)))
+	                {
+	                    if((first != NULL) && (first->left == i))
+	                    {
+	                        *player_turn = true;
+	                        if((first != NULL) && (first->left == l->left))
+	                            inverter_info(&l);
+	                        trocar(table,bot,l->left,l->right,true);
+	                        break;
+	                    }
+	                    else if((last != NULL) && (last->right == i))
+	                    {
+	                        *player_turn = true;
+	                        if((last != NULL) && (last->right == l->right))
+	                            inverter_info(&l);
+	                        trocar(table,bot,l->left,l->right,false);
+	                        break;
+	                    }
+	                }
         // JOGANDO NORMAL //
         //jogando as buchas primeiro //
         if(!(*player_turn))
