@@ -666,7 +666,7 @@ void jogar()
             printf("\n//     Acoes possiveis    //");
             printf("\n//------------------------//");
             if(pode_jogar(player,table,true,NULL) || pode_jogar(player,table,false,NULL))
-                printf("\nX - Jogar peca");
+                printf("\nX - Encaixar peca");
             if((lot != NULL) && comprar)
                 printf("\n0 - Comprar");
             else
@@ -702,7 +702,7 @@ void jogar()
                             imprimir(table);
                             imprimirplayer(player);
                             printf("\n//------------------------//");
-                            printf("\n//       Onde jogar?      //");
+                            printf("\n//          Onde?         //");
                             printf("\n//------------------------//");
                             if(pode_jogar(bot,table,true,p))
                             	printf("\n1 - No inicio");
@@ -785,7 +785,24 @@ void jogar()
     else if(bot == NULL)
         printf("\n\n  Bot venceu!\n\n");
     else
-        printf("\n\n  Empate, o jogo trancou!\n\n");
+    {
+        int player_pts=0, bot_pts=0;
+        piece *l;
+        for(l=player;l!=NULL;l=l->prox)
+            player_pts += l->left + l->right;
+        for(l=bot;l!=NULL;l=l->prox)
+            bot_pts += l->left + l->right;
+         printf("\n\n  Jogo trancado!");
+         printf("\n//----------------------//");
+         printf("\n//   Voce: %i pontos    //",player_pts);
+         printf("\n//----------------------//");
+         printf("\n//   Bot: %i pontos     //",bot_pts);
+         printf("\n//----------------------//");
+        if(player_pts < bot_pts)
+            printf("\n\n  Voce venceu!\n\n");
+        else if(bot_pts < player_pts)
+            printf("\n\n  Bot venceu!\n\n");
+    }
     pause();
     // Limpando listas //
     limpar(lot);
@@ -796,55 +813,90 @@ void jogar()
 
 void bot_ia(piece **bot, piece **table, piece **lot,bool *comprar,bool *player_turn)
 {
-    // IA 0.1 //
+    // IA 0.2 //
     if(pode_jogar(*bot,*table,true,NULL) || pode_jogar(*bot,*table,false,NULL))
     {
         piece *l,*first=*table,*last=buscar_ultimo(*table);
         // CONTANDO AS PEÇAS JÁ JOGADAS E PRESENTES NA MÃO //
-        int num[6],i;
-        for(i=0;i<6;i++)
+        int num[7],i;
+        for(i=0;i<7;i++)
             num[i] = 0;
-        for(l=*table;l!=NULL;l=l->prox) // contando da table
+        // contando da table //
+        for(l=*table;l!=NULL;l=l->prox) 
         {
             num[l->left]++;
-            num[l->right]++;
+            if(l->left != l->right)
+                num[l->right]++;
         }
-        for(l=*bot;l!=NULL;l=l->prox) // contando da mão
+        // contando da mão //
+        for(l=*bot;l!=NULL;l=l->prox) 
         {
             num[l->left]++;
-            num[l->right]++;
+            if(l->left != l->right)
+                num[l->right]++;
         }
-        // JOGANDO AS DOUBLES PRIMEIRO //
-        for(l=*bot;l!=NULL;l=l->prox)
-            if((first == NULL) || pode_jogar(*bot,*table,true,l))
-            {
-                *player_turn = true;
-                trocar(table,bot,l->left,l->right,true);
-                break;
-            }
-            else if((last == NULL) || pode_jogar(*bot,*table,false,l))
-            {
-                *player_turn = true;
-                trocar(table,bot,l->left,l->right,false);
-                break;
-            }
-        // JOGANDO AS DEMAIS PECAS //
-        if(!*player_turn)
+        // JOGANDO TRANCANDO O PLAYER //
+         for(i=0;i<7;i++)
+            if((num[i] > 3) && !(*player_turn))
+                for(l=*bot;l!=NULL;l=l->prox)
+                    if(!(*player_turn) && ((l->left == i) || (l->right == i)))
+                    {
+                        if((first != NULL) && (first->left == i))
+                        {
+                            *player_turn = true;
+                            if((first != NULL) && (first->left == l->left))
+                                inverter_info(&l);
+                            trocar(table,bot,l->left,l->right,true);
+                            break;
+                        }
+                        else if((last != NULL) && (last->right == i))
+                        {
+                            *player_turn = true;
+                            if((last != NULL) && (last->right == l->right))
+                                inverter_info(&l);
+                            trocar(table,bot,l->left,l->right,false);
+                            break;
+                        }
+                    }
+        // JOGANDO NORMAL //
+        //jogando as buchas primeiro //
+        if(!(*player_turn))
             for(l=*bot;l!=NULL;l=l->prox)
-                if((first == NULL) || pode_jogar(*bot,*table,true,l))
+                if(!(*player_turn) && (l->left == l->right))
                 {
-                    *player_turn = true;
-                    if((first != NULL) && (first->left == l->left))
-                        inverter_info(&l);
-                    trocar(table,bot,l->left,l->right,true);
-                    break;
+                    if((first == NULL) || pode_jogar(*bot,*table,true,l))
+                    {
+                        *player_turn = true;
+                        trocar(table,bot,l->left,l->right,true);
+                        break;
+                    }
+                    else if((last == NULL) || pode_jogar(*bot,*table,false,l))
+                    {
+                        *player_turn = true;
+                        trocar(table,bot,l->left,l->right,false);
+                        break;
+                    }
                 }
-                else if((last == NULL) || pode_jogar(*bot,*table,false,l))
+        // jogando as demais peças //
+        if(!(*player_turn))
+            for(l=*bot;l!=NULL;l=l->prox)
+                if(!(*player_turn))
                 {
-                    *player_turn = true;
-                    if((last != NULL) && (last->right == l->right))
-                        inverter_info(&l);
-                    trocar(table,bot,l->left,l->right,false);
+                    if((first == NULL) || pode_jogar(*bot,*table,true,l))
+                    {
+                        *player_turn = true;
+                        if((first != NULL) && (first->left == l->left))
+                            inverter_info(&l);
+                        trocar(table,bot,l->left,l->right,true);
+                        break;
+                    }
+                    else if((last == NULL) || pode_jogar(*bot,*table,false,l))
+                    {
+                        *player_turn = true;
+                        if((last != NULL) && (last->right == l->right))
+                            inverter_info(&l);
+                        trocar(table,bot,l->left,l->right,false);
+                    }
                 }
     }
     else if(*comprar && (*lot != NULL))
